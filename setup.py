@@ -7,12 +7,6 @@ def read(fname):
     # read the contents of a text file
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-install_requires = [
-    'setuptools',
-    'easy-thumbnails',
-    'django-mptt>=0.2.1',
-]
-
 setup(
     name = "django-filer",
     version = version,
@@ -24,7 +18,6 @@ setup(
     author = 'Stefan Foulis',
     author_email = 'stefan.foulis@gmail.com',
     packages=find_packages(),
-    install_requires = install_requires,
     include_package_data=True,
     zip_safe=False,
     classifiers = [
