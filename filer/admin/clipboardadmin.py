@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import os
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect, HttpResponse
@@ -33,7 +36,7 @@ class ClipboardAdmin(admin.ModelAdmin):
     raw_id_fields = ('user',)
     verbose_name = "DEBUG Clipboard"
     verbose_name_plural = "DEBUG Clipboards"
-    
+
     def get_urls(self):
         from django.conf.urls.defaults import patterns, url
         urls = super(ClipboardAdmin, self).get_urls()
@@ -69,9 +72,11 @@ class ClipboardAdmin(admin.ModelAdmin):
     def ajax_upload(self, request, folder_id=None):
         """
         receives an upload from the flash uploader and fixes the session
-        because of the missing cookie. Receives only one file at the time, 
+        because of the missing cookie. Receives only one file at the time,
         althow it may be a zip file, that will be unpacked.
         """
+        file_items = []
+
         try:
             # flashcookie-hack (flash does not submit the cookie, so we send the
             # django sessionid over regular post
@@ -87,7 +92,6 @@ class ClipboardAdmin(admin.ModelAdmin):
             # Get clipboad
             clipboard, was_clipboard_created = Clipboard.objects.get_or_create(user=request.user)
             files = generic_handle_file(file, original_filename)
-            file_items = []
             for ifile, iname in files:
                 try:
                     iext = os.path.splitext(iname)[1].lower()
@@ -110,19 +114,19 @@ class ClipboardAdmin(admin.ModelAdmin):
                         file_items.append(file)
                         clipboard_item = ClipboardItem(clipboard=clipboard, file=file)
                         clipboard_item.save()
-                    except Exception, e:
-                        #print e
-                        pass
+                    except Exception:
+                        logger.exception("Failed to save clipboard item.")
                 else:
-                    pass#print uploadform.errors
-        except Exception, e:
-            #print e
-            pass
+                    logger.warn("Upload form not valid. The errors are: %s", uploadform.errors)
+        except Exception:
+            logger.exception("Failed to process upload:")
+
         return render_to_response('admin/filer/tools/clipboard/clipboard_item_rows.html',
                                   {'items': file_items },
                                   context_instance=RequestContext(request))
     def move_file_to_clipboard(self, request):
-        #print "move file"
+        logger.info("Moving file")
+
         if request.method == 'POST':
             file_id = request.POST.get("file_id", None)
             clipboard = tools.get_user_clipboard(request.user)
@@ -142,4 +146,3 @@ class ClipboardAdmin(admin.ModelAdmin):
             'change': False,
             'delete': False,
         }
-
